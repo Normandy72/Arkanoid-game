@@ -1,3 +1,4 @@
+// ----- ПЕРЕМЕННЫЕ -----
 var canvas, canvasContext;
 
 // положение шарика по оси Х и У
@@ -28,32 +29,8 @@ const BRICK_ROWS = 14;
 // массив блоков
 var brickGrid = new Array(BRICK_COLS * BRICK_ROWS);
 
-// функция для заполнения массива
-function brickReset(){
-    for(var i = 0; i < BRICK_COLS * BRICK_ROWS; i++)
-    {
-        // if(Math.random() < 0.5)
-        // {
-        //     brickGrid[i] = true;
-        // }
-        // else
-        // {
-        //     brickGrid[i] = false;
-        // }  
-        brickGrid[i] = true;
-    }
-}
 
-function updateMousePos(e){
-    var rect = canvas.getBoundingClientRect();
-    var root = document.documentElement;
-
-    mouseX = e.clientX - rect.left - root.scrollLeft;
-    mouseY = e.clientY - rect.top - root.scrollTop;
-
-    paddleX = mouseX - PADDLE_WIDTH/2;
-}
-
+// ----- ФУНКЦИИ -----
 window.onload = function(){
     // --- СОЗДАЕМ ХОЛСТ И КОНТЕКСТ ---
     // получаем холст через ID
@@ -75,6 +52,34 @@ window.onload = function(){
     //ballReset();
 }
 
+// функция для заполнения массива
+function brickReset(){
+    for(var i = 0; i < BRICK_COLS * BRICK_ROWS; i++)
+    {
+        // if(Math.random() < 0.5)
+        // {
+        //     brickGrid[i] = true;
+        // }
+        // else
+        // {
+        //     brickGrid[i] = false;
+        // }  
+        brickGrid[i] = true;
+    }
+}
+
+// функция, определяющая позицию курсора мыши
+function updateMousePos(e){
+    var rect = canvas.getBoundingClientRect();
+    var root = document.documentElement;
+
+    mouseX = e.clientX - rect.left - root.scrollLeft;
+    mouseY = e.clientY - rect.top - root.scrollTop;
+
+    paddleX = mouseX - PADDLE_WIDTH/2;
+}
+
+// обновление 
 function updateAll(){
     moveAll();
     drawAll();
@@ -86,7 +91,8 @@ function ballReset(){
     ballY = canvas.height/2;
 }
 
-function moveAll(){
+// движение мячика
+function ballMove(){
     // изменение положение шарика по оси Х каждый раз, когда холст обновляется
     ballX += ballSpeedX;
 
@@ -112,19 +118,38 @@ function moveAll(){
     {
         ballSpeedY *= -1;
     }
+}
 
+// взаимодействие мячика и блоков
+function ballBrickHandeling(){
     var ballBrickCol = Math.floor(ballX / BRICK_W);
     var ballBrickRow = Math.floor(ballY / BRICK_H);
     var brickIndexUnderBall = rowColToArrayIndex(ballBrickCol, ballBrickRow);
     if(ballBrickCol >= 0 && ballBrickCol < BRICK_COLS && ballBrickRow >= 0 && ballBrickRow < BRICK_ROWS)
     {
         if(brickGrid[brickIndexUnderBall])
-        {
+        {            
             brickGrid[brickIndexUnderBall] = false;
-            ballSpeedY *= -1;
+            
+            var prevBallX = ballX - ballSpeedX;
+            var prevBallY = ballY - ballSpeedY;
+            var prevBrickCol = Math.floor(prevBallX / BRICK_W);
+            var prevBrickRow = Math.floor(prevBallY / BRICK_H);
+
+            if(prevBrickCol != ballBrickCol)
+            {
+                ballSpeedX *= -1;
+            }  
+            if(prevBrickRow != ballBrickRow)
+            {
+                ballSpeedY *= -1;
+            }              
         }        
     }
+}
 
+// взаимодействие мячика и манипулятора
+function ballPaddleHandeling(){
     // определяем положение сторон манипулятора (верхний край, нижний край, левый край, правый край)
     var paddleTopEdgeY = canvas.height - PADDLE_DIST_FROM_AGE;
     var paddleBottomEdgeY = paddleTopEdgeY + PADDLE_THICKNESS;
@@ -146,6 +171,14 @@ function moveAll(){
     }    
 }
 
+// создаем все движения игры
+function moveAll(){
+    ballMove();    
+    ballBrickHandeling();
+    ballPaddleHandeling();
+}
+
+// создаем все элементы игры
 function drawAll(){
     colorRect(0,0, canvas.width,canvas.height, 'black');    // очищаем экран
     colorCircle(ballX, ballY, 10, 'white');                 // рисуем мячик
@@ -165,6 +198,7 @@ function drawAll(){
     // }
 }
 
+// создание прямоугольников
 function colorRect(topLeftX, topLeftY, boxWidth, boxHeight, fillColor){
     // окрашиваем холст в нужный цвет каждый раз при обновлении холста
     canvasContext.fillStyle = fillColor;
@@ -172,6 +206,7 @@ function colorRect(topLeftX, topLeftY, boxWidth, boxHeight, fillColor){
     canvasContext.fillRect(topLeftX, topLeftY, boxWidth, boxHeight);
 }
 
+// создание шариков
 function colorCircle(centerX,centerY, radius, fillColor){
     // --- СОЗДАЕМ ШАРИК ---
     // задаем ему цвет
@@ -184,6 +219,7 @@ function colorCircle(centerX,centerY, radius, fillColor){
     canvasContext.fill();
 }
 
+// создание текста
 function colorText(showWords, textX, textY, fillColor){
     canvasContext.fillStyle = fillColor;
     canvasContext.fillText(showWords, textX, textY);
@@ -194,6 +230,7 @@ function rowColToArrayIndex(col, row){
    return col + BRICK_COLS * row;
 }
 
+// создаем блоки
 function drawBricks(){
     for(var eachRow = 0; eachRow < BRICK_ROWS; eachRow++)
     {
