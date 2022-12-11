@@ -77,6 +77,12 @@ function updateMousePos(e){
     mouseY = e.clientY - rect.top - root.scrollTop;
 
     paddleX = mouseX - PADDLE_WIDTH/2;
+
+    // cheat / hack to test ball in any position
+    // ballX = mouseX;
+    // ballY = mouseY;
+    // ballSpeedX = 3;
+    // ballSpeedY = -4;
 }
 
 // обновление 
@@ -136,14 +142,35 @@ function ballBrickHandeling(){
             var prevBrickCol = Math.floor(prevBallX / BRICK_W);
             var prevBrickRow = Math.floor(prevBallY / BRICK_H);
 
+            var bothTestFailed = true;
             if(prevBrickCol != ballBrickCol)
             {
-                ballSpeedX *= -1;
+                var adjBrickSide = rowColToArrayIndex(prevBrickCol, ballBrickRow);
+
+                // если нет блокирующего блока, то направление меняется
+                if(brickGrid[adjBrickSide] == false)
+                {
+                    ballSpeedX *= -1;
+                    bothTestFailed = false;
+                }                
             }  
             if(prevBrickRow != ballBrickRow)
             {
+                var adjBlockTopBottom = rowColToArrayIndex(ballBrickCol, prevBrickRow);
+
+                if(brickGrid[adjBlockTopBottom] == false)
+                {
+                    ballSpeedY *= -1;
+                    bothTestFailed = false;
+                }                
+            }
+            
+            // мячик меняет направление при удалении блоков наискосок
+            if(bothTestFailed)
+            {
+                ballSpeedX *= -1;
                 ballSpeedY *= -1;
-            }              
+            }
         }        
     }
 }
