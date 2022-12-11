@@ -29,6 +29,9 @@ const BRICK_ROWS = 14;
 // массив блоков
 var brickGrid = new Array(BRICK_COLS * BRICK_ROWS);
 
+// кол-во исчезнувших блоков
+var bricksLeft = 0;
+
 
 // ----- ФУНКЦИИ -----
 window.onload = function(){
@@ -49,12 +52,21 @@ window.onload = function(){
     canvas.addEventListener('mousemove', updateMousePos);
 
     brickReset();
-    //ballReset();
+    ballReset();
 }
 
 // функция для заполнения массива
 function brickReset(){
-    for(var i = 0; i < BRICK_COLS * BRICK_ROWS; i++)
+    bricksLeft = 0;
+    // т.к. объявляет i за пределами циклов, значение этой переменной делится между двумя циклами (=> во втором можно не указывать)
+    var i; 
+    // первые 3 строки пустые
+    for(i = 0; i < 3 * BRICK_COLS; i++)
+    {
+        brickGrid[i] = false;
+    }
+    // далее с четвертой строки создаются блоки
+    for(; i < BRICK_COLS * BRICK_ROWS; i++)
     {
         // if(Math.random() < 0.5)
         // {
@@ -65,6 +77,7 @@ function brickReset(){
         //     brickGrid[i] = false;
         // }  
         brickGrid[i] = true;
+        bricksLeft++;
     }
 }
 
@@ -78,7 +91,7 @@ function updateMousePos(e){
 
     paddleX = mouseX - PADDLE_WIDTH/2;
 
-    // cheat / hack to test ball in any position
+    // cheat / hack to test ball in any position  (использовать для теста!)
     // ballX = mouseX;
     // ballY = mouseY;
     // ballSpeedX = 3;
@@ -102,12 +115,12 @@ function ballMove(){
     // изменение положение шарика по оси Х каждый раз, когда холст обновляется
     ballX += ballSpeedX;
 
-    if(ballX > canvas.width)
+    if(ballX > canvas.width && ballSpeedX > 0.0)
     {
         ballSpeedX *= -1;
     }
 
-    if(ballX < 0)
+    if(ballX < 0 && ballSpeedX < 0.0)
     {
         ballSpeedX *= -1;
     }
@@ -117,13 +130,30 @@ function ballMove(){
 
     if(ballY > canvas.height)
     {
+        // если мячик вылетает из поля - он появляется снова в центре поля
         ballReset();
+        // если мячик вылетает из поля - все блоки появляются снова
+        brickReset();
     }
  
-    if(ballY < 0)
+    if(ballY < 0 && ballSpeedY < 0.0)
     {
         ballSpeedY *= -1;
     }
+}
+
+// вспомогательная функция
+function isBallAtColRow(col, row)
+{
+    if(col >= 0 && col < BRICK_COLS && row >= 0 && row < BRICK_ROWS)
+    {
+        var brickIndexUnderCoord = rowColToArrayIndex(col, row);
+        return brickGrid[brickIndexUnderCoord];
+    }
+    else
+    {
+        return false;
+    }    
 }
 
 // взаимодействие мячика и блоков
@@ -132,9 +162,10 @@ function ballBrickHandeling(){
     var ballBrickRow = Math.floor(ballY / BRICK_H);
     var brickIndexUnderBall = rowColToArrayIndex(ballBrickCol, ballBrickRow);
     if(ballBrickCol >= 0 && ballBrickCol < BRICK_COLS && ballBrickRow >= 0 && ballBrickRow < BRICK_ROWS)
-    {
-        if(brickGrid[brickIndexUnderBall])
+    {        
+        if(isBallAtColRow(ballBrickCol, ballBrickRow))
         {            
+            bricksLeft--;
             brickGrid[brickIndexUnderBall] = false;
             
             var prevBallX = ballX - ballSpeedX;
@@ -145,10 +176,8 @@ function ballBrickHandeling(){
             var bothTestFailed = true;
             if(prevBrickCol != ballBrickCol)
             {
-                var adjBrickSide = rowColToArrayIndex(prevBrickCol, ballBrickRow);
-
                 // если нет блокирующего блока, то направление меняется
-                if(brickGrid[adjBrickSide] == false)
+                if(isBallAtColRow(prevBrickCol, ballBrickRow) == false)
                 {
                     ballSpeedX *= -1;
                     bothTestFailed = false;
@@ -156,9 +185,7 @@ function ballBrickHandeling(){
             }  
             if(prevBrickRow != ballBrickRow)
             {
-                var adjBlockTopBottom = rowColToArrayIndex(ballBrickCol, prevBrickRow);
-
-                if(brickGrid[adjBlockTopBottom] == false)
+                if(isBallAtColRow(ballBrickCol, prevBrickRow) == false)
                 {
                     ballSpeedY *= -1;
                     bothTestFailed = false;
@@ -195,6 +222,11 @@ function ballPaddleHandeling(){
         var centerOfPaddleX = paddleX + PADDLE_WIDTH/2;
         var ballDistFromPaddleCentreX = ballX - centerOfPaddleX;
         ballSpeedX = ballDistFromPaddleCentreX  * 0.35;         // немного уменьшаем скорость
+
+        if(bricksLeft == 0)
+        {
+            brickReset();
+        }
     }    
 }
 
